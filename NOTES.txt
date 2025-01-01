@@ -1,0 +1,10 @@
+NOTES
+
+INSTALLATION CHECK
+python -c "import sqlite3; print('SQLite is installed')"
+
+CREATE AND RUN VIRTUAL ENVIRONMENT
+    create virtual environment folder
+python -m venv ven
+    activate the virtual environment
+.\venv\Scripts\activate
