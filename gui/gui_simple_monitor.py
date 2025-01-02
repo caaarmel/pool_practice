@@ -31,9 +31,9 @@ progress_canvas.pack(side='left', fill='y')
 stats_frame = tk.Frame(left_frame, bg='black')
 stats_frame.pack(fill='both', expand=True)
 
-stats_label = tk.Label(stats_frame, text="Total Shots: 0\nShots Made: 0\nShots Missed: 0",
-                       font=("Arial", 24), fg='white', bg='black', justify='left')
-stats_label.place(relx=0.5, rely=0.5, anchor='center')
+stats_label = tk.Label(stats_frame, text="Total: 0\nMade: 0\nMissed: 0",
+                       font=("Arial", 36), fg='white', bg='black', justify='left')
+stats_label.place(relx=0.75, rely=0.5, anchor='center')
 
 # RIGHT: Cue Ball Graphic + English Indicator
 right_frame = tk.Frame(middle_frame, bg='black')

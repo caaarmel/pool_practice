@@ -1,6 +1,6 @@
 
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 📝 Session State
 session_state = {
@@ -50,14 +50,6 @@ def start_session():
 
         print(f"🎯 Session started! Session ID: {session_state['session_id']}")
 
-def resume_session():
-    if session_state['session_paused']:
-        paused_duration = (get_current_time() - session_state['pause_time']).total_seconds()
-        session_state['total_paused_duration'] += paused_duration
-        session_state['session_paused'] = False
-        session_state['pause_time'] = None
-        print("▶️ Session resumed.")
-
 def reconcile_sessions_and_shots():
     """
     Reconciles sessions and shots tables after ending a session.
@@ -67,10 +59,26 @@ def reconcile_sessions_and_shots():
         
         # Reconcile Sessions Table
         cursor.execute('''
-            UPDATE sessions
-            SET end_time = ?
-            WHERE end_time IS NULL;
-        ''', (datetime.now().isoformat(),))
+            SELECT id, start_time, end_time FROM sessions
+            ORDER BY start_time;
+        ''')
+        sessions = cursor.fetchall()
+        
+        for i in range(len(sessions)):
+            if not sessions[i][2]:
+                if i + 1 < len(sessions):
+                    next_start_time = datetime.fromisoformat(sessions[i + 1][1])
+                    adjusted_end_time = next_start_time - timedelta(seconds=1)
+                else:
+                    adjusted_end_time = datetime.now()
+                
+                cursor.execute('''
+                    UPDATE sessions
+                    SET end_time = ?
+                    WHERE id = ?
+                ''', (adjusted_end_time.isoformat(), sessions[i][0]))
+        
+        conn.commit()
         print("✅ Sessions table reconciled: Empty end times populated.")
 
         # Optional: Check for overlapping session times
@@ -79,9 +87,15 @@ def reconcile_sessions_and_shots():
             ORDER BY start_time;
         ''')
         sessions = cursor.fetchall()
+
         for i in range(len(sessions) - 1):
-            if sessions[i][2] > sessions[i + 1][1]:  # end_time > next start_time
-                print(f"⚠️ Session {sessions[i][0]} and {sessions[i+1][0]} have overlapping times!")
+            current_end = datetime.fromisoformat(sessions[i][2])
+            next_start = datetime.fromisoformat(sessions[i + 1][1])
+
+            # Check if current_end >= next_start (instead of just >)
+            if current_end >= next_start:
+                print(f"⚠️ Session {sessions[i][0]} (ends: {current_end}) and {sessions[i+1][0]} (starts: {next_start}) have overlapping or touching times!")
+
 
         # Reconcile Shots Table
         cursor.execute('''

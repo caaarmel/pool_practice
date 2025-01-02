@@ -1,9 +1,8 @@
-
+import sqlite3
 import pygame
 import time
 from game_logic import (
     start_session,
-    resume_session,
     end_session,
     toggle_spin,
     record_shot,
@@ -16,13 +15,19 @@ from game_logic import (
 pygame.init()
 pygame.joystick.init()
 
-if pygame.joystick.get_count() == 0:
-    print("No controller detected. Please connect your 8BitDo controller.")
-    exit()
-else:
-    controller = pygame.joystick.Joystick(0)
-    controller.init()
-    print(f"Controller detected: {controller.get_name()}")
+controller_connected = False
+controller = None
+
+# 🎮 Attempt to connect controller
+while not controller_connected:
+    if pygame.joystick.get_count() > 0:
+        controller = pygame.joystick.Joystick(0)
+        controller.init()
+        controller_connected = True
+        print(f"🎮 Controller connected: {controller.get_name()}")
+    else:
+        print("⌛ Waiting for controller connection...")
+        time.sleep(1)  # Sleep instead of reinitializing pygame.joystick
 
 # Track previous button states
 previous_button_state = {
@@ -41,37 +46,42 @@ try:
     print("\nPress Start to begin/end Session, Select to undo last shot.\n")
 
     while True:
-        for event in pygame.event.get():
-            if event.type == pygame.JOYBUTTONDOWN:
-                # 🎯 Start/Pause Session
-                if event.button == 7:
-                    if session_state['session_active']:
-                        end_session()
-                    else:
-                        start_session()
+        try:
+            for event in pygame.event.get():
+                if event.type == pygame.JOYBUTTONDOWN:
+                    # 🎯 Start/Pause Session
+                    if event.button == 7:
+                        if session_state['session_active']:
+                            end_session()
+                        else:
+                            start_session()
 
-                # ↩️ Undo Shot
-                if event.button == 6 and session_state['session_active']:
-                    undo_last_shot()
-                    print("Undo last shot!")
+                    # ↩️ Undo Shot
+                    if event.button == 6 and session_state['session_active']:
+                        undo_last_shot()
+                        print("Undo last shot!")
 
-                # ✅ Ball Potted
-                if event.button == 5:
-                    record_shot('Potted')
+                    # ✅ Ball Potted
+                    if event.button == 5:
+                        record_shot('Potted')
 
-                # ❌ Ball Missed
-                if event.button == 4:
-                    record_shot('Missed')
+                    # ❌ Ball Missed
+                    if event.button == 4:
+                        record_shot('Missed')
 
-                # 🌀 Spin Controls
-                if event.button == 3:  # X Button → Top
-                    toggle_spin('top')
-                if event.button == 0:  # B Button → Bottom
-                    toggle_spin('bottom')
-                if event.button == 2:  # Y Button → Left
-                    toggle_spin('left')
-                if event.button == 1:  # A Button → Right
-                    toggle_spin('right')
+                    # 🌀 Spin Controls
+                    if event.button == 3:  # X Button → Top
+                        toggle_spin('top')
+                    if event.button == 0:  # B Button → Bottom
+                        toggle_spin('bottom')
+                    if event.button == 2:  # Y Button → Left
+                        toggle_spin('left')
+                    if event.button == 1:  # A Button → Right
+                        toggle_spin('right')
+
+        except pygame.error as e:
+            print(f"⚠️ Pygame event error: {e}")
+            time.sleep(1)
 
         # 🖥️ Display State
         if session_state['session_active']:
