@@ -1,6 +1,7 @@
 import pygame
 import threading
 import queue
+import platform
 from game_logic import (
     start_session,
     end_session,
@@ -10,7 +11,16 @@ from game_logic import (
     get_elapsed_time
 )
 from gui.gui_simple_monitor import start_gui
+from gui.gui_touchscreen import start_touchscreen_gui
 from session_state import session_state
+
+# Check if running on Raspberry Pi (ARM platform)
+if platform.system() == "Linux" and "arm" in platform.machine():
+    from gui_touchscreen import start_touchscreen_gui
+    start_touchscreen_gui()
+else:
+    from gui_simple_monitor import start_gui
+    start_gui()
 
 
 # 🎮 Controller Initialization
