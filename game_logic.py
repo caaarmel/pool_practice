@@ -1,25 +1,7 @@
 
 import sqlite3
 from datetime import datetime, timedelta
-
-# 📝 Session State
-session_state = {
-    'session_active': False,
-    'session_paused': False,
-    'start_time': None,
-    'pause_time': None,
-    'total_paused_duration': 0,
-    'shots': [],
-    'balls_potted': 0,
-    'balls_missed': 0,
-    'total_shots': 0,
-    'current_spin': {
-        'top': 0,
-        'bottom': 0,
-        'left': 0,
-        'right': 0
-    }
-}
+from session_state import session_state
 
 # ✅ Timer Functions
 def get_current_time():
@@ -122,6 +104,16 @@ def reconcile_sessions_and_shots():
         conn.commit()
         print("🔄 Database reconciliation complete!")
 
+        # 🚨 Delete sessions with zero shots
+        cursor.execute('''
+            DELETE FROM sessions
+            WHERE id NOT IN (SELECT DISTINCT session_id FROM shots WHERE session_id IS NOT NULL);
+        ''')
+        conn.commit()
+        print("🗑️ Deleted sessions with zero shots associated.")
+
+        print("🔄 Database reconciliation complete!")
+
 def end_session():
     """
     Ends the current session, calculates session duration, and saves session details.
@@ -170,7 +162,6 @@ def reset_session_state():
     global session_state
     session_state.update({
         'session_active': False,
-        'session_paused': False,
         'start_time': None,
         'pause_time': None,
         'total_paused_duration': 0,
