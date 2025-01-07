@@ -10,17 +10,17 @@ from game_logic import (
     undo_last_shot,
     get_elapsed_time
 )
-from gui.gui_simple_monitor import start_gui
-from gui.gui_touchscreen import start_touchscreen_gui
+#from gui.gui_simple_monitor import start_gui
+#from gui.gui_touchscreen import start_touchscreen_gui
 from session_state import session_state
 
 # Check if running on Raspberry Pi (ARM platform)
 if platform.system() == "Linux" and "arm" in platform.machine():
-    from gui_touchscreen import start_touchscreen_gui
+    from gui.gui_touchscreen import start_touchscreen_gui
     start_touchscreen_gui()
 else:
-    from gui_simple_monitor import start_gui
-    start_gui()
+    from gui.gui_simple_monitor import start_gui
+    
 
 
 # 🎮 Controller Initialization
