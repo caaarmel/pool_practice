@@ -2,6 +2,7 @@ import math
 import tkinter as tk
 from tkinter import ttk  # Import ttk for Progressbar and other themed widgets
 import queue
+from datetime import datetime, timedelta
 
 
 def start_gui(gui_queue):
@@ -37,6 +38,30 @@ def start_gui(gui_queue):
     left_frame = tk.Frame(middle_frame, bg='black')
     left_frame.place(relx=0, rely=0, relwidth=0.67, relheight=1)  # 2/3 of width
     
+    # Label for Last Session Stats
+    last_session_label = tk.Label(
+        left_frame,
+        text="Last Session Stats",
+        font=("Arial", 18),
+        fg="white",
+        bg="black",
+        justify='center',
+        anchor='center'
+    )
+    last_session_label.pack(fill='x', pady=5)
+
+    # Label for Recent Sessions
+    recent_sessions_label = tk.Label(
+        left_frame,
+        text="Recent Sessions",
+        font=("Arial", 10),
+        fg="white",
+        bg="black",
+        justify='center',
+        anchor='center'
+    )
+    recent_sessions_label.pack(fill='x', pady=5)
+
     stats_label = tk.Label(
         left_frame,
         # stats_frame,
@@ -53,6 +78,8 @@ def start_gui(gui_queue):
     padding_y = max(stats_height // 20, 10)
     stats_label.pack_configure(padx=padding_x, pady=padding_y)
     stats_label.pack(expand=True, fill='both')
+
+
 
     # RIGHT: Cue Ball Graphic + English Indicator
     right_frame = tk.Frame(middle_frame, bg='black')
@@ -72,6 +99,8 @@ def start_gui(gui_queue):
         anchor='center'
     )
     english_label.pack(pady=10)
+
+    
 
     # ---------------- DYNAMIC RESIZING ----------------
 
@@ -183,7 +212,7 @@ def start_gui(gui_queue):
     progress_label = tk.Label(
         root,
         text="Success Percentage: 0%",
-        font=("Arial", 16),
+        font=("Arial", 20),
         fg='white',
         bg='black'
     )
@@ -204,6 +233,7 @@ def start_gui(gui_queue):
                     header_label.config(
                         text=f"Session ID: {data.get('session_id', '-')} | Timer: {data.get('timer', '00:00')}"
                     )
+                    
                                 
                 # Stats Updates
                 if 'stats' in data:
@@ -214,6 +244,62 @@ def start_gui(gui_queue):
                             f"Total: {stats.get('total', 0)}\n"
                     )
                 
+                # Session Stats Updates
+                if 'session_active' in data and not data['session_active']:
+                    if 'last_session' in data:
+                        last_session = data['last_session']
+                        if int(last_session['total_shots']) > 0:
+                            last_session_success_percentage = round((int(last_session['balls_potted'])/int(last_session['total_shots']))*100) 
+                        else:
+                            last_session_success_percentage = 0
+                        last_session_text = (
+                            f"Last Session Stats:\n"
+                            f"Duration: {last_session['duration']} min\n"
+                            f"Total Shots: {last_session['total_shots']} ({last_session['balls_potted']}/{last_session['total_shots']})\n"
+                            f"Success: {last_session_success_percentage}% \n"
+                        )
+                        last_session_label.config(text=last_session_text, justify='center', anchor='center')
+
+                    if 'recent_sessions' in data:
+                        recent_sessions_text = "Recent Sessions:\n"
+                        current_session_id = None
+
+                        for session in data['recent_sessions']:
+                            session_id = session[0] if session[0] is not None else "-"
+                            date = datetime.fromisoformat(session[1]).strftime('%m-%d-%y %a') if session[1] else "-"
+                            spin = session[2] if session[2] is not None else "N/A"
+                            total_shots = int(session[3]) if session[3] is not None else 0
+                            shots_made = int(session[4]) if session[4] is not None else 0
+                            spin_success_percentage = round((shots_made / total_shots) * 100) if total_shots > 0 else 0
+
+                            if session_id != current_session_id:
+                                if current_session_id is not None:
+                                    # Add a blank line to separate sessions
+                                    recent_sessions_text += "\n"
+                                # Display session header with total shots
+                                recent_sessions_text += f"Session# {session_id}:  {date} \n"
+                                current_session_id = session_id
+                            
+
+                            # Display spin details indented
+                            recent_sessions_text += f"   {spin}: {shots_made}/{total_shots} | {spin_success_percentage}%\n"
+                                            
+                        recent_sessions_label.config(text=recent_sessions_text, justify='center', anchor='center')
+
+                if 'session_active' in data:
+                    if data['session_active']:
+                        stats_label.pack(expand=True, fill='both')
+                        last_session_label.pack_forget()
+                        recent_sessions_label.pack_forget()
+                        header_label.config(bg="dark green")
+                        #header_frame.config(bg="dark green")
+                    else:
+                        stats_label.pack_forget()
+                        last_session_label.pack(fill='x', pady=5)
+                        recent_sessions_label.pack(fill='x', pady=5)
+                        header_label.config(bg="gray")
+                        #header_frame.config(bg="gray")
+
                 # Success Percentage Updates
                 if 'progress' in data:
                     progress_percentage = data['progress'].get('percentage', 0)
@@ -242,7 +328,7 @@ def start_gui(gui_queue):
     # Start GUI Update Loop
     root.mainloop()
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
 #    print("🚀 Starting GUI Directly")
     import tkinter as tk
     import queue

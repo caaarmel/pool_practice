@@ -8,10 +8,11 @@ from game_logic import (
     toggle_spin,
     record_shot,
     undo_last_shot,
-    get_elapsed_time
+    get_elapsed_time,
+    get_last_session_stats,
+    get_recent_sessions
 )
-#from gui.gui_simple_monitor import start_gui
-#from gui.gui_touchscreen import start_touchscreen_gui
+
 from session_state import session_state
 
 # Check if running on Raspberry Pi (ARM platform)
@@ -143,6 +144,30 @@ while running:
     spin_state = " + ".join(filter(None, spin_state.split(" + "))) or "Center"
 
     session_state['current_spin_display'] = spin_state
+
+    if not session_state['session_active']:
+        last_stats = get_last_session_stats()
+        recent_sessions = get_recent_sessions(limit=5)
+
+        if last_stats:
+            gui_queue.put({
+                'session_active': False,
+                'feedback': 'No active session - Displaying last session stats',
+                'last_session': {
+                    'duration': round(int(last_stats['duration'] / 60)),
+                    'total_shots': last_stats['total_shots'],
+                    'balls_potted': last_stats['balls_potted'],
+                    'balls_missed': last_stats['balls_missed'],
+                },
+                'recent_sessions': recent_sessions  # Ensure recent_sessions is included
+            })
+        else:
+            gui_queue.put({
+                'session_active': False,
+                'feedback': 'No active session and no previous session data available',
+                'recent_sessions': recent_sessions
+            })
+
 
     if session_state.get('session_active', False):
         gui_event = {
