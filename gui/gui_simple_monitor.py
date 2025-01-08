@@ -42,7 +42,7 @@ def start_gui(gui_queue):
     last_session_label = tk.Label(
         left_frame,
         text="Last Session Stats",
-        font=("Arial", 18),
+        font=("Arial", 20),
         fg="white",
         bg="black",
         justify='center',
@@ -54,7 +54,7 @@ def start_gui(gui_queue):
     recent_sessions_label = tk.Label(
         left_frame,
         text="Recent Sessions",
-        font=("Arial", 10),
+        font=("Arial", 12),
         fg="white",
         bg="black",
         justify='center',
@@ -66,7 +66,7 @@ def start_gui(gui_queue):
         left_frame,
         # stats_frame,
         text="Made: 0\nMissed: 0\n\nTotal: 0",
-        font=("Arial", 28),
+        font=("Arial", 40),
         fg='white',
         bg='black',
         justify='center',
@@ -253,9 +253,8 @@ def start_gui(gui_queue):
                         else:
                             last_session_success_percentage = 0
                         last_session_text = (
-                            f"Last Session Stats:\n"
                             f"Duration: {last_session['duration']} min\n"
-                            f"Total Shots: {last_session['total_shots']} ({last_session['balls_potted']}/{last_session['total_shots']})\n"
+                            f"Total: {last_session['total_shots']} ({last_session['balls_potted']}/{last_session['total_shots']})\n"
                             f"Success: {last_session_success_percentage}% \n"
                         )
                         last_session_label.config(text=last_session_text, justify='center', anchor='center')
