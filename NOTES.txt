@@ -3,8 +3,18 @@ NOTES
 INSTALLATION CHECK
 python -c "import sqlite3; print('SQLite is installed')"
 
+REMOTE USER RESTRICTION / UPDATE
+    in powershell, run as admin:
+
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
 CREATE AND RUN VIRTUAL ENVIRONMENT
     create virtual environment folder
 python -m venv ven
     activate the virtual environment
 .\venv\Scripts\activate
+
+
+INSTALL REQUIREMENTS
+
+pip install -r requirements.txt
