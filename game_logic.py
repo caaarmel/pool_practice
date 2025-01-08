@@ -1,25 +1,11 @@
 
 import sqlite3
-from datetime import datetime
+import os
+from datetime import datetime, timedelta
+from session_state import session_state
 
-# 📝 Session State
-session_state = {
-    'session_active': False,
-    'session_paused': False,
-    'start_time': None,
-    'pause_time': None,
-    'total_paused_duration': 0,
-    'shots': [],
-    'balls_potted': 0,
-    'balls_missed': 0,
-    'total_shots': 0,
-    'current_spin': {
-        'top': 0,
-        'bottom': 0,
-        'left': 0,
-        'right': 0
-    }
-}
+DATABASE = os.path.join(os.path.dirname(__file__), 'pool_practice.db')
+connection = sqlite3.connect(DATABASE)
 
 # ✅ Timer Functions
 def get_current_time():
@@ -39,7 +25,7 @@ def start_session():
         session_state['total_paused_duration'] = 0
 
         # Save the session to the database and retrieve the session ID
-        with sqlite3.connect('pool_practice.db') as conn:
+        with connection as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO sessions (start_time, end_time, total_duration, total_shots, balls_potted, balls_missed)
@@ -50,27 +36,35 @@ def start_session():
 
         print(f"🎯 Session started! Session ID: {session_state['session_id']}")
 
-def resume_session():
-    if session_state['session_paused']:
-        paused_duration = (get_current_time() - session_state['pause_time']).total_seconds()
-        session_state['total_paused_duration'] += paused_duration
-        session_state['session_paused'] = False
-        session_state['pause_time'] = None
-        print("▶️ Session resumed.")
-
 def reconcile_sessions_and_shots():
     """
     Reconciles sessions and shots tables after ending a session.
     """
-    with sqlite3.connect('pool_practice.db') as conn:
+    with connection as conn:
         cursor = conn.cursor()
         
         # Reconcile Sessions Table
         cursor.execute('''
-            UPDATE sessions
-            SET end_time = ?
-            WHERE end_time IS NULL;
-        ''', (datetime.now().isoformat(),))
+            SELECT id, start_time, end_time FROM sessions
+            ORDER BY start_time;
+        ''')
+        sessions = cursor.fetchall()
+        
+        for i in range(len(sessions)):
+            if not sessions[i][2]:
+                if i + 1 < len(sessions):
+                    next_start_time = datetime.fromisoformat(sessions[i + 1][1])
+                    adjusted_end_time = next_start_time - timedelta(seconds=1)
+                else:
+                    adjusted_end_time = datetime.now()
+                
+                cursor.execute('''
+                    UPDATE sessions
+                    SET end_time = ?
+                    WHERE id = ?
+                ''', (adjusted_end_time.isoformat(), sessions[i][0]))
+        
+        conn.commit()
         print("✅ Sessions table reconciled: Empty end times populated.")
 
         # Optional: Check for overlapping session times
@@ -79,9 +73,15 @@ def reconcile_sessions_and_shots():
             ORDER BY start_time;
         ''')
         sessions = cursor.fetchall()
+
         for i in range(len(sessions) - 1):
-            if sessions[i][2] > sessions[i + 1][1]:  # end_time > next start_time
-                print(f"⚠️ Session {sessions[i][0]} and {sessions[i+1][0]} have overlapping times!")
+            current_end = datetime.fromisoformat(sessions[i][2])
+            next_start = datetime.fromisoformat(sessions[i + 1][1])
+
+            # Check if current_end >= next_start (instead of just >)
+            if current_end >= next_start:
+                print(f"⚠️ Session {sessions[i][0]} (ends: {current_end}) and {sessions[i+1][0]} (starts: {next_start}) have overlapping or touching times!")
+
 
         # Reconcile Shots Table
         cursor.execute('''
@@ -108,6 +108,16 @@ def reconcile_sessions_and_shots():
         conn.commit()
         print("🔄 Database reconciliation complete!")
 
+        # 🚨 Delete sessions with zero shots
+        cursor.execute('''
+            DELETE FROM sessions
+            WHERE id NOT IN (SELECT DISTINCT session_id FROM shots WHERE session_id IS NOT NULL);
+        ''')
+        conn.commit()
+        print("🗑️ Deleted sessions with zero shots associated.")
+
+        print("🔄 Database reconciliation complete!")
+
 def end_session():
     """
     Ends the current session, calculates session duration, and saves session details.
@@ -117,7 +127,7 @@ def end_session():
         session_state['end_time'] = datetime.now()
         session_duration = (session_state['end_time'] - session_state['start_time']).total_seconds() - session_state['total_paused_duration']
 
-        with sqlite3.connect('pool_practice.db') as conn:
+        with connection as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 UPDATE sessions
@@ -156,7 +166,6 @@ def reset_session_state():
     global session_state
     session_state.update({
         'session_active': False,
-        'session_paused': False,
         'start_time': None,
         'pause_time': None,
         'total_paused_duration': 0,
@@ -259,7 +268,7 @@ def record_shot(result):
         session_state['balls_missed'] += 1
 
     # Save to the database
-    with sqlite3.connect('pool_practice.db') as conn:
+    with connection as conn:
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO shots (session_id, shot_number, result, spin, timestamp)
@@ -285,7 +294,7 @@ def undo_last_shot():
             session_state['balls_missed'] -= 1
 
         # Remove from the database
-        with sqlite3.connect('pool_practice.db') as conn:
+        with connection as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 DELETE FROM shots
