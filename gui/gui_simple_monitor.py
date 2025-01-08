@@ -65,7 +65,7 @@ def start_gui(gui_queue):
     english_label = tk.Label(
         right_frame,
         text="Center",
-        font=("Arial", 16),
+        font=("Arial", 14),
         fg='white',
         bg='black',
         justify='center',
@@ -222,7 +222,7 @@ def start_gui(gui_queue):
                 
                 # Cue Ball English Updates
                 if 'english' in data:
-                    english_label.config(text=f"English: {data['english']}")
+                    english_label.config(text=f"{data['english']}")
                     draw_cue_ball_with_spin(data['english'])
                 
                 # Feedback Message

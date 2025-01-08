@@ -1,7 +1,11 @@
 
 import sqlite3
+import os
 from datetime import datetime, timedelta
 from session_state import session_state
+
+DATABASE = os.path.join(os.path.dirname(__file__), 'pool_practice.db')
+connection = sqlite3.connect(DATABASE)
 
 # ✅ Timer Functions
 def get_current_time():
@@ -21,7 +25,7 @@ def start_session():
         session_state['total_paused_duration'] = 0
 
         # Save the session to the database and retrieve the session ID
-        with sqlite3.connect('pool_practice.db') as conn:
+        with connection as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO sessions (start_time, end_time, total_duration, total_shots, balls_potted, balls_missed)
@@ -36,7 +40,7 @@ def reconcile_sessions_and_shots():
     """
     Reconciles sessions and shots tables after ending a session.
     """
-    with sqlite3.connect('pool_practice.db') as conn:
+    with connection as conn:
         cursor = conn.cursor()
         
         # Reconcile Sessions Table
@@ -123,7 +127,7 @@ def end_session():
         session_state['end_time'] = datetime.now()
         session_duration = (session_state['end_time'] - session_state['start_time']).total_seconds() - session_state['total_paused_duration']
 
-        with sqlite3.connect('pool_practice.db') as conn:
+        with connection as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 UPDATE sessions
@@ -264,7 +268,7 @@ def record_shot(result):
         session_state['balls_missed'] += 1
 
     # Save to the database
-    with sqlite3.connect('pool_practice.db') as conn:
+    with connection as conn:
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO shots (session_id, shot_number, result, spin, timestamp)
@@ -290,7 +294,7 @@ def undo_last_shot():
             session_state['balls_missed'] -= 1
 
         # Remove from the database
-        with sqlite3.connect('pool_practice.db') as conn:
+        with connection as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 DELETE FROM shots
