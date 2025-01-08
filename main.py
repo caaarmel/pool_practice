@@ -147,7 +147,7 @@ while running:
 
     if not session_state['session_active']:
         last_stats = get_last_session_stats()
-        recent_sessions = get_recent_sessions(limit=5)
+        recent_sessions = get_recent_sessions(limit=3)
 
         if last_stats:
             gui_queue.put({

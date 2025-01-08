@@ -42,7 +42,7 @@ def start_gui(gui_queue):
     last_session_label = tk.Label(
         left_frame,
         text="Last Session Stats",
-        font=("Arial", 20),
+        font=("Arial", 16),
         fg="white",
         bg="black",
         justify='center',
@@ -54,7 +54,7 @@ def start_gui(gui_queue):
     recent_sessions_label = tk.Label(
         left_frame,
         text="Recent Sessions",
-        font=("Arial", 12),
+        font=("Arial", 10),
         fg="white",
         bg="black",
         justify='center',
@@ -65,8 +65,8 @@ def start_gui(gui_queue):
     stats_label = tk.Label(
         left_frame,
         # stats_frame,
-        text="Made: 0\nMissed: 0\n\nTotal: 0",
-        font=("Arial", 40),
+        text="Stats\nMade: 0\nMissed: 0\n\nTotal: 0",
+        font=("Arial", 36),
         fg='white',
         bg='black',
         justify='center',
@@ -239,7 +239,7 @@ def start_gui(gui_queue):
                 if 'stats' in data:
                     stats = data['stats']
                     stats_label.config(
-                        text=f"Made: {stats.get('made', 0)}\n"
+                        text=f" \n \nMade: {stats.get('made', 0)}\n"
                             f"Missed: {stats.get('missed', 0)}\n\n"
                             f"Total: {stats.get('total', 0)}\n"
                     )
