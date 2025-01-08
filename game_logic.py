@@ -18,6 +18,53 @@ def get_elapsed_time():
     return 0
 
 # 🎯 Session Management
+def get_last_session_stats():
+    """
+    Fetch the last session's stats if no session is currently active.
+    """
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT start_time, end_time, total_duration, total_shots, balls_potted, balls_missed
+            FROM sessions
+            ORDER BY end_time DESC
+            LIMIT 1;
+        ''')
+        last_session = cursor.fetchone()
+        if last_session:
+            return {
+                'start_time': last_session[0],
+                'end_time': last_session[1],
+                'duration': last_session[2],
+                'total_shots': last_session[3],
+                'balls_potted': last_session[4],
+                'balls_missed': last_session[5],
+            }
+    return None
+
+def get_recent_sessions(limit=5):
+    """
+    Fetch the last `limit` sessions for compact display.
+    """
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT s.id AS session_id,
+                   s.start_time,
+                   sh.spin,
+                   COUNT(*) AS total_shots,
+                   SUM(CASE WHEN sh.result = 'Potted' THEN 1 ELSE 0 END) AS shots_made
+            FROM sessions s
+            LEFT JOIN shots sh ON s.id = sh.session_id
+            WHERE sh.spin IS NOT NULL
+            GROUP BY s.id, sh.spin,s.start_time
+            ORDER BY s.start_time DESC, sh.spin
+            LIMIT ?;
+        ''', (limit,))
+        recent_sessions = cursor.fetchall()
+    return recent_sessions
+
+
 def start_session():
     if not session_state['session_active']:
         session_state['session_active'] = True
